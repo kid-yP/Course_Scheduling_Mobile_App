@@ -1,0 +1,94 @@
+-- 1. User roles
+CREATE TYPE user_role AS ENUM ('student', 'lecturer', 'administrator');
+
+-- 2. Profiles table
+CREATE TABLE profiles (
+    id uuid PRIMARY KEY REFERENCES auth.users(id),
+    username text UNIQUE NOT NULL,
+    role user_role NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+-- 3. Courses
+CREATE TABLE courses (
+    id serial PRIMARY KEY,
+    name text NOT NULL,
+    description text,
+    code text UNIQUE NOT NULL
+);
+
+-- 4. Sections
+CREATE TABLE sections (
+    id serial PRIMARY KEY,
+    course_id int REFERENCES courses(id) ON DELETE CASCADE,
+    name text NOT NULL,
+    semester text,
+    year int
+);
+
+-- 5. Enrollments (students in sections)
+CREATE TABLE enrollments (
+    id serial PRIMARY KEY,
+    student_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+    section_id int REFERENCES sections(id) ON DELETE CASCADE,
+    enrolled_at timestamptz DEFAULT now(),
+    UNIQUE(student_id, section_id)
+);
+
+-- 6. Lecturer assignments
+CREATE TABLE lecturer_assignments (
+    id serial PRIMARY KEY,
+    lecturer_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+    course_id int REFERENCES courses(id) ON DELETE CASCADE,
+    section_id int REFERENCES sections(id) ON DELETE CASCADE,
+    UNIQUE(lecturer_id, course_id, section_id)
+);
+
+-- 7. Weekly schedule
+CREATE TABLE weekly_schedule (
+    id serial PRIMARY KEY,
+    course_id int REFERENCES courses(id) ON DELETE CASCADE,
+    section_id int REFERENCES sections(id) ON DELETE CASCADE,
+    lecturer_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+    day_of_week int NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
+    start_time time NOT NULL,
+    end_time time NOT NULL,
+    location text
+);
+
+-- 8. Chat rooms (per section per course)
+CREATE TABLE chat_rooms (
+    id serial PRIMARY KEY,
+    course_id int REFERENCES courses(id) ON DELETE CASCADE,
+    section_id int REFERENCES sections(id) ON DELETE CASCADE,
+    created_at timestamptz DEFAULT now(),
+    UNIQUE(course_id, section_id)
+);
+
+-- 9. Chat messages
+CREATE TABLE chat_messages (
+    id serial PRIMARY KEY,
+    chat_room_id int REFERENCES chat_rooms(id) ON DELETE CASCADE,
+    sender_id uuid REFERENCES profiles(id),
+    message_text text NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+-- 10. Section-course resources
+CREATE TABLE section_resources (
+    id serial PRIMARY KEY,
+    course_id int REFERENCES courses(id) ON DELETE CASCADE,
+    section_id int REFERENCES sections(id) ON DELETE CASCADE,
+    uploaded_by uuid REFERENCES profiles(id), -- lecturer who uploaded
+    file_name text NOT NULL,
+    file_url text NOT NULL,
+    description text,
+    uploaded_at timestamptz DEFAULT now()
+);
+
+-- 11. Indexes for performance
+CREATE INDEX idx_enrollments_student ON enrollments(student_id);
+CREATE INDEX idx_schedule_section ON weekly_schedule(section_id);
+CREATE INDEX idx_messages_chat_room ON chat_messages(chat_room_id);
+CREATE INDEX idx_resources_section ON section_resources(section_id);
+CREATE INDEX idx_resources_course ON section_resources(course_id);
