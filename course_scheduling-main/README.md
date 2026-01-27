@@ -44,3 +44,4 @@ flutter run
 
 2. Configure Supabase credentials:
    - Update `lib/core/secrets/app_secrets.dart` (URL + anon key), or refactor to env-based config.
+
