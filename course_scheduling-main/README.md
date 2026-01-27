@@ -1,4 +1,4 @@
-# Course Scheduling
+# Course Scheduling  
 
 A Flutter app for managing university course schedules with role-based flows:
 
@@ -44,4 +44,3 @@ flutter run
 
 2. Configure Supabase credentials:
    - Update `lib/core/secrets/app_secrets.dart` (URL + anon key), or refactor to env-based config.
-
